@@ -3,11 +3,14 @@ use std::fs;
 fn module_fuel() -> i32 {
     let mut input = fs::read_to_string("resources/day1.input").unwrap();
     input.pop();
-    let module_masses = input.split("\n").map(|s| s.parse::<i32>().unwrap()).collect::<Vec<i32>>();
+    let module_masses = input
+        .split("\n")
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect::<Vec<i32>>();
 
     let mut fuel_required = 0;
     for mass in module_masses {
-        let module_fuel = mass/3 - 2;
+        let module_fuel = mass / 3 - 2;
         fuel_required = fuel_required + accrue_fuel(module_fuel);
     }
     fuel_required
