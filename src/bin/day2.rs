@@ -4,23 +4,28 @@ use std::fs;
 fn main() {
     let mut input = fs::read_to_string("resources/day2.input").unwrap();
     input.pop();
-    let program = input
+    let instructions = input
         .split(",")
         .map(|s| s.parse::<i32>().unwrap())
         .collect::<Vec<i32>>();
+
+    let program = intcode_computer::Program::new(instructions, Vec::new(), Vec::new());
 
     const PROGRAM_OUTPUT: i32 = 19690720;
 
     'outer: for i in 0..100 {
         for j in 0..100 {
             let mut clone = program.clone();
-            clone[1] = i;
-            clone[2] = j;
+            clone.instructions[1] = i;
+            clone.instructions[2] = j;
 
             intcode_computer::process(&mut clone);
-            if clone[0] == PROGRAM_OUTPUT {
+            if i == 12 && j == 2 {
+                println!("program output at 1202 : {}", clone.instructions[0]);
+            }
+            if clone.instructions[0] == PROGRAM_OUTPUT {
                 let code = 100 * i + j;
-                println!("code : {}", code);
+                println!("code for output {} : {}", PROGRAM_OUTPUT, code);
                 break 'outer;
             }
         }
