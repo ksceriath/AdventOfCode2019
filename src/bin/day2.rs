@@ -8,14 +8,12 @@ fn main() {
         .split(",")
         .map(|s| s.parse::<i32>().unwrap())
         .collect::<Vec<i32>>();
-
-    let program = intcode_computer::Program::new(instructions, Vec::new(), Vec::new());
-
+        
     const PROGRAM_OUTPUT: i32 = 19690720;
 
     'outer: for i in 0..100 {
         for j in 0..100 {
-            let mut clone = program.clone();
+            let mut clone = intcode_computer::Program::new(instructions.clone(), None);
             clone.instructions[1] = i;
             clone.instructions[2] = j;
 

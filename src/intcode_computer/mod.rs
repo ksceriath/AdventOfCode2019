@@ -1,28 +1,30 @@
-#[macro_use]
 use log::debug;
+use std::thread;
 
-#[derive(Clone)]
+pub trait IO {
+    fn read(&mut self) -> i32;
+    fn write(&mut self, o: i32);
+}
+
 pub struct Program {
     pub instructions: Vec<i32>,
     instruction_ptr: usize,
-    input: Vec<i32>,
-    pub output: Vec<i32>,
+    io: Option<Box<dyn IO>>,
 }
 
 impl Program {
-    pub fn new(instructions: Vec<i32>, input: Vec<i32>, output: Vec<i32>) -> Self {
+    pub fn new(instructions: Vec<i32>, io: Option<Box<dyn IO>>) -> Self {
         Program {
             instruction_ptr: 0,
             instructions,
-            input,
-            output,
+            io,
         }
     }
 
     fn next(&mut self) -> i32 {
         self.instruction_ptr = self.instruction_ptr + 1;
         let ins = self.instructions[self.instruction_ptr - 1];
-        debug!(" [ {} : {} ] ", self.instruction_ptr - 1, ins);
+        debug!("{:?} =>  [ {} : {} ] ", thread::current().name(), self.instruction_ptr - 1, ins);
         ins
     }
 
@@ -39,19 +41,19 @@ impl Program {
     }
 
     fn set_position_from_input(&mut self, position: usize) {
-        debug!("SET INPUT AT {}, ", position);
+        debug!("{:?} => SET INPUT AT {}, ", thread::current().name(), position);
         self.instructions[position] = self.from_input();
     }
 
     fn from_input(&mut self) -> i32 {
-        let x = self.input.pop().unwrap();
-        debug!("READ INPUT : {}", x);
+        let x = self.io.as_mut().unwrap().read();
+        debug!("{:?} => READ INPUT : {:?}", thread::current().name(), x);
         x
     }
 
     fn to_output(&mut self, data: i32) {
-        debug!("WRITE OUTPUT : {}", data);
-        self.output.push(data);
+        debug!("{:?} => WRITE OUTPUT : {}", thread::current().name(), data);
+        self.io.as_mut().unwrap().write(data);
     }
 }
 
@@ -67,7 +69,7 @@ impl Instruction {
             p.push(c % 10);
             c = c / 10;
         }
-        debug!(" < {:?} > ", p);
+        debug!("{:?} =>  < {:?} > ", thread::current().name(), p);
         p
     }
 
@@ -139,7 +141,10 @@ impl OpCodes {
             OpCodes::JumpIfFalse => OpCodes::process_jump_if_false(program, param_modes),
             OpCodes::LessThan => OpCodes::process_less_than(program, param_modes),
             OpCodes::Equals => OpCodes::process_equals(program, param_modes),
-            OpCodes::Halt => false,
+            OpCodes::Halt => {
+                debug!("{:?} => HALTING", thread::current().name());
+                false
+            },
         }
     }
 
@@ -147,7 +152,7 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         let location = program.next() as usize;
-        debug!("ADD {} and {}", op1, op2);
+        debug!("{:?} => ADD {} and {}", thread::current().name(), op1, op2);
         program.set_position(location, op1 + op2);
         true
     }
@@ -156,7 +161,7 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         let location = program.next() as usize;
-        debug!("MULTIPLY {} and {}", op1, op2);
+        debug!("{:?} => MULTIPLY {} and {}", thread::current().name(), op1, op2);
         program.set_position(location, op1 * op2);
         true
     }
@@ -169,7 +174,7 @@ impl OpCodes {
 
     fn process_output(program: &mut Program, param_modes: &Vec<i32>) -> bool {
         let data = OpCodes::get_parameter(param_modes[0], program);
-        debug!("OUTPUT : {}", data);
+        debug!("{:?} => OUTPUT : {}", thread::current().name(), data);
         program.to_output(data);
         true
     }
@@ -178,10 +183,10 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         if op1 != 0 {
-            debug!("Jump to {}", op2);
+            debug!("{:?} => Jump to {}", thread::current().name(), op2);
             program.set_pointer(op2 as usize);
         } else {
-            debug!("No Jump");
+            debug!("{:?} => No Jump", thread::current().name());
         }
         true
     }
@@ -190,10 +195,10 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         if op1 == 0 {
-            debug!("Jump to {}", op2);
+            debug!("{:?} => Jump to {}", thread::current().name(), op2);
             program.set_pointer(op2 as usize);
         } else {
-            debug!("No Jump");
+            debug!("{:?} => No Jump", thread::current().name());
         }
         true
     }
@@ -202,7 +207,7 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         let location = program.next() as usize;
-        debug!(" {} LT? {}", op1, op2);
+        debug!("{:?} =>  {} LT? {}", thread::current().name(), op1, op2);
         if op1 < op2 {
             program.set_position(location, 1);
         } else {
@@ -215,7 +220,7 @@ impl OpCodes {
         let op1 = OpCodes::get_parameter(param_modes[0], program);
         let op2 = OpCodes::get_parameter(param_modes[1], program);
         let location = program.next() as usize;
-        debug!(" {} EQ? {}", op1, op2);
+        debug!("{:?} =>  {} EQ? {}", thread::current().name(), op1, op2);
         if op1 == op2 {
             program.set_position(location, 1);
         } else {
@@ -240,7 +245,6 @@ enum Action {
 }
 
 pub fn process(program: &mut Program) {
-    env_logger::init();
     loop {
         let instruction = Instruction::new(program.next());
         match instruction.process(program) {
