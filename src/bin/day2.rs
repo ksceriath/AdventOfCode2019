@@ -8,7 +8,7 @@ fn main() {
         .split(",")
         .map(|s| s.parse::<i32>().unwrap())
         .collect::<Vec<i32>>();
-        
+
     const PROGRAM_OUTPUT: i32 = 19690720;
 
     'outer: for i in 0..100 {

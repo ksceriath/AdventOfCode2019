@@ -4,11 +4,14 @@ fn main() {
     let mut input = fs::read_to_string("resources/day8.input").unwrap();
     input.pop();
 
-    let input = input.chars().map(|c| c.to_digit(10).unwrap()).collect::<Vec<u32>>();
+    let input = input
+        .chars()
+        .map(|c| c.to_digit(10).unwrap())
+        .collect::<Vec<u32>>();
 
     let mut layers = Vec::new();
 
-    for layer in input.chunks(25*6) {
+    for layer in input.chunks(25 * 6) {
         layers.push(Vec::from(layer));
     }
 
@@ -18,11 +21,14 @@ fn main() {
     let image = generate_image(&layers);
     for row in image.chunks(25) {
         for i in row {
-            print!("{}", match i {
-                0 => '\u{2B1B}',
-                1 => '\u{2B1C}',
-                _ => panic!("Invalid color code!"),
-            });
+            print!(
+                "{}",
+                match i {
+                    0 => '\u{2B1B}',
+                    1 => '\u{2B1C}',
+                    _ => panic!("Invalid color code!"),
+                }
+            );
         }
         println!();
     }
@@ -53,7 +59,7 @@ fn validate_layers(layers: &Vec<Vec<u32>>) -> u32 {
 }
 
 fn generate_image(layers: &Vec<Vec<u32>>) -> Vec<u32> {
-    let mut image = vec![2;25*6];
+    let mut image = vec![2; 25 * 6];
     for layer in layers {
         if merge_layers(&mut image, layer) {
             break;
